@@ -1,4 +1,5 @@
-# -*- coding: mbcs -*-
+# -*- coding:utf-8 -*-
+# mbcs
 # Do not delete the following import lines
 from abaqus import *
 from abaqusConstants import *
@@ -19,18 +20,18 @@ import mesh
 import optimization
 import job
 import sketch
-import visualization ###??run-script???????????
-# from odbAccess import * ###???????shell?cmd???????????
+import visualization ###通过run-script执行该脚本时需引用这句
+# from odbAccess import * ###官方解释，通过shell或cmd执行该脚本时需引用这句
 import xyPlot
 import displayGroupOdbToolset as dgo
 import connectorBehavior
 
-### ??SI(mm)?????
+### 采用SI(mm)国际单位制
 
 class AbaqusStructureClass:
 
     def __init__(self,model='structure',file = 'D:/pymodel.cae'):
-        #?????
+        #初始化信息
         if not os.path.exists('c:/Abaqus_TempSave'):
             os.makedirs('c:/Abaqus_TempSave')
         mdb.saveAs(pathName='c:/Abaqus_TempSave/abaqus_model_'+time.strftime("%Y%m%d-%H%M%S", time.localtime()))
@@ -39,7 +40,7 @@ class AbaqusStructureClass:
         self.filePath = file
 
     def __del__(self):
-        #?????
+        #退出前保存
         mdb.save()
 
     def startBuilding(self):
@@ -47,9 +48,9 @@ class AbaqusStructureClass:
         # for key in keys:
         #     del mdb.models[key]
         # mdb.Model(name=self.modelName, modelType=STANDARD_EXPLICIT)
-        mdb.models.changeKey(fromName='Model-1', toName=self.modelName)  # ?????
-        session.viewports['Viewport: 1'].setValues(displayedObject=None)  # ????
-        mdb.saveAs(pathName=self.filePath)  # ??
+        mdb.models.changeKey(fromName='Model-1', toName=self.modelName)  # 重命名模型
+        session.viewports['Viewport: 1'].setValues(displayedObject=None)  # 设置视口
+        mdb.saveAs(pathName=self.filePath)  # 存储
 
         self.createMaterialConcrete('C20/25')
         self.createMaterialSteel('Q235')
