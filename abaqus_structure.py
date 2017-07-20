@@ -6,6 +6,7 @@ from abaqusConstants import *
 # mbcs
 import time
 import os
+import re
 
 import section
 import regionToolset
@@ -37,6 +38,7 @@ class AbaqusStructureClass:
         mdb.saveAs(pathName='c:/Abaqus_TempSave/abaqus_model_'+time.strftime("%Y%m%d-%H%M%S", time.localtime()))
         Mdb()
         self.modelName = model
+        self.modelVolume = [0,0,0]
         self.filePath = file
         self.partLength = {}
         self.partCount = {}
@@ -44,6 +46,14 @@ class AbaqusStructureClass:
         self.partSize = {}
         self.allCols = {}
         self.colsPos = {}
+        self.colsPart = {}
+        self.colsBeamState = {} #用于存储四个布尔值表示柱四周梁的有无[up,down,left,right]
+        self.allZBeams = {}
+        self.zBeamsPos = {}
+        self.zBeamsPart = {}
+        self.allXBeams = {}
+        self.xBeamsPos = {}
+        self.xBeamsPart = {}
 
     def __del__(self):
         #退出前保存
@@ -58,9 +68,11 @@ class AbaqusStructureClass:
         session.viewports['Viewport: 1'].setValues(displayedObject=None)  # 设置视口
         mdb.saveAs(pathName=self.filePath)  # 存储
 
+        self.modelVolume = [13500, 7300, 15900]
+
         self.createMaterialConcrete('C20/25')
         self.createMaterialSteel('Q235')
-        print "材料创建完成"
+        print "materials created"
 
         self.createSectionConcrete('concrete CS','C20/25')
         self.createSectionRebar('rebar-r7',7,'Q235')
@@ -81,18 +93,61 @@ class AbaqusStructureClass:
         # self.rebarStyle['col-1'] = [[0 for i in range(3)] for i in range(3)]
         self.rebarStyle['col-1']= [[400],[400]]
         self.rebarStyle['col-2'] = [[400], [400]]
+        self.rebarStyle['beam-1'] = [[300], [275,275]]
+        self.rebarStyle['beam-2'] = [[250], [275,275]]
+        self.rebarStyle['beam-3'] = [[300], [275, 275]]
 
-        for j in range(6):
+        for j in range(2):
             if j==0:
                 height = 0
             else:
                 height = 4000+3300*(j-1)
-            for i in range(10):
-                cmd = "self.colsPos['col-%d-%d-1'] = (4500*%d, %d, 0);" % ((j+1),(i+1),i,height) +\
-                      "self.colsPos['col-%d-%d-2'] = (4500*%d, %d, 6600);"% ((j+1),(i+1),i,height) +\
-                      "self.colsPos['col-%d-%d-3'] = (4500*%d, %d, 6600+2700);"% ((j+1),(i+1),i,height) +\
-                      "self.colsPos['col-%d-%d-4'] = (4500*%d, %d, 6600+2700+6600)" % ((j+1),(i+1),i,height)
+            for i in range(4):
+                cmd = "self.colsPos['col-%d-%d-1'] = [4500*%d, %d, 0];" % ((j+1),(i+1),i,height) +\
+                      "self.colsPos['col-%d-%d-2'] = [4500*%d, %d, 6600];"% ((j+1),(i+1),i,height) +\
+                      "self.colsPos['col-%d-%d-3'] = [4500*%d, %d, 6600+2700];"% ((j+1),(i+1),i,height) +\
+                      "self.colsPos['col-%d-%d-4'] = [4500*%d, %d, 6600+2700+6600]" % ((j+1),(i+1),i,height)
                 exec(cmd)
+
+        for colName in self.colsPos.keys():
+            if abs(self.colsPos[colName][0] - 0) < 500:
+                if abs(self.colsPos[colName][2] - 0) < 500:
+                    self.colsBeamState[colName] = [0,1,0,1]
+                elif abs(self.colsPos[colName][2] - self.modelVolume[2]) < 500:
+                    self.colsBeamState[colName] = [1,0,0,1]
+                else:
+                    self.colsBeamState[colName] = [1, 1, 0, 1]
+            elif abs(self.colsPos[colName][0] - self.modelVolume[0]) < 500:
+                if abs(self.colsPos[colName][2] - 0) < 500:
+                    self.colsBeamState[colName] = [0,1,1,0]
+                elif abs(self.colsPos[colName][2] - self.modelVolume[2]) < 500:
+                    self.colsBeamState[colName] = [1,0,1,0]
+                else:
+                    self.colsBeamState[colName] = [1, 1, 1, 0]
+            elif abs(self.colsPos[colName][2] - 0) < 500:
+                self.colsBeamState[colName] = [0, 1, 1, 1]
+            elif abs(self.colsPos[colName][2] - self.modelVolume[2]) < 500:
+                self.colsBeamState[colName] = [1, 0, 1, 1]
+            else:
+                self.colsBeamState[colName] = [1, 1, 1, 1]
+
+        for j in range(2):
+            height = 4000 + 3300 * j
+            for i in range(4):
+                cmd = "self.zBeamsPos['zbeam-%d-%d-1'] = [4500*%d, %d, 0];" % ((j + 1), (i + 1), i, height) + \
+                      "self.zBeamsPos['zbeam-%d-%d-2'] = [4500*%d, %d, 6600];" % ((j + 1), (i + 1), i, height) + \
+                      "self.zBeamsPos['zbeam-%d-%d-3'] = [4500*%d, %d, 6600+2700]" % ((j + 1), (i + 1), i, height)
+                exec (cmd)
+
+        for j in range(2):
+            height = 4000 + 3300 * j
+            for i in range(3):
+                cmd = "self.xBeamsPos['xbeam-%d-%d-1'] = [4500*%d, %d, 0];" % ((j + 1), (i + 1), i, height) + \
+                      "self.xBeamsPos['xbeam-%d-%d-2'] = [4500*%d, %d, 6600];" % ((j + 1), (i + 1), i, height) + \
+                      "self.xBeamsPos['xbeam-%d-%d-3'] = [4500*%d, %d, 6600+2700];" % ((j + 1), (i + 1), i, height) + \
+                      "self.xBeamsPos['xbeam-%d-%d-4'] = [4500*%d, %d, 6600+2700+6600]" % ((j + 1), (i + 1), i, height)
+                exec (cmd)
+        # print self.zBeamsPos.keys()
         # self.colsPos['col-1-1-1'] = (4500*0, 0, 0)
         # self.colsPos['col-1-1-2'] = (4500*0, 0, 6600)
         # self.colsPos['col-1-1-3'] = (4500*0, 0, 6600+2700)
@@ -111,10 +166,19 @@ class AbaqusStructureClass:
 
         for colName in self.colsPos.keys():
             if colName[:5]=='col-1':
-                cmd = "self.allCols['%s'] = self.assemblyRebarIntoConcrete('col-1', 'rebar-1','%s')" % (colName,colName)
+                self.allCols[colName] = self.assemblyRebarIntoConcrete('col-1', 'rebar-1',colName)
             else:
-                cmd = "self.allCols['%s'] = self.assemblyRebarIntoConcrete('col-2', 'rebar-2','%s')" % (colName,colName)
-            exec(cmd)
+                self.allCols[colName] = self.assemblyRebarIntoConcrete('col-2', 'rebar-2',colName)
+
+
+        for beamName in self.zBeamsPos.keys():
+            if re.match('zbeam-\d-\d+-2', beamName):
+                self.allZBeams[beamName] = self.assemblyRebarIntoConcrete('beam-2', 'rebar-4',beamName)
+            else:
+                self.allZBeams[beamName] = self.assemblyRebarIntoConcrete('beam-1', 'rebar-3',beamName)
+
+        for beamName in self.xBeamsPos.keys():
+            self.allXBeams[beamName] = self.assemblyRebarIntoConcrete('beam-3', 'rebar-5', beamName)
         # for i in range(4):
         #     cmd = "self.allCols['col-1-1-%d'] = self.assemblyRebarIntoConcrete('col-1', 'rebar-1')" % (i+1)
         #     exec(cmd)
@@ -149,11 +213,53 @@ class AbaqusStructureClass:
 
         assembly = mdb.models[self.modelName].rootAssembly
         assembly.DatumCsysByDefault(CARTESIAN)
-
+        # mdb.models['structure'].rootAssembly.instances['col-2-3-3'].faces.getSequenceFromMask(mask=('[#1 ]', ), )
 
         for colName in self.allCols.keys():
-            cmd = "assembly.translate(instanceList=tuple(self.allCols['%s']), vector=self.colsPos['%s'])" % (colName,colName)
-            exec(cmd)
+            assembly.translate(instanceList=tuple(self.allCols[colName]), vector=self.colsPos[colName])
+
+        for beamName in self.allZBeams.keys():
+            assembly.translate(instanceList=tuple(self.allZBeams[beamName]), vector=self.zBeamsPos[beamName])
+
+        for beamName in self.allXBeams.keys():
+            assembly.translate(instanceList=tuple(self.allXBeams[beamName]), vector=self.xBeamsPos[beamName])
+
+
+        for beamName in self.allZBeams.keys():
+            vector = [(self.partSize[self.colsPart['col'+beamName[5:]]][0] - self.partSize[self.zBeamsPart[beamName]][0])/2,
+                      0,self.partSize[self.colsPart['col'+beamName[5:]]][1]]
+            if abs(self.zBeamsPos[beamName][0] - 0) < 500:
+                vector[0] = vector[0]-(self.partSize[self.colsPart['col'+beamName[5:]]][0] - self.partSize[self.zBeamsPart[beamName]][0])/2
+            if abs(self.zBeamsPos[beamName][0] - self.modelVolume[0]) < 500:
+                vector[0] = vector[0] + (self.partSize[self.colsPart['col'+beamName[5:]]][0] - self.partSize[self.zBeamsPart[beamName]][0])/2
+            self.updateInstancePos(self.zBeamsPos[beamName],vector)
+            assembly.translate(instanceList=tuple(self.allZBeams[beamName]), vector=vector)
+
+        for beamName in self.allXBeams.keys():
+            vector = [self.partSize[self.colsPart['col' + beamName[5:]]][0],
+                      0, (self.partSize[self.colsPart['col' + beamName[5:]]][1] -
+                       self.partSize[self.xBeamsPart[beamName]][0]) / 2]
+            if abs(self.xBeamsPos[beamName][2] - 0) < 500:
+                vector[2] = vector[2]-(self.partSize[self.colsPart['col' + beamName[5:]]][1] - self.partSize[self.xBeamsPart[beamName]][0]) / 2
+            if abs(self.xBeamsPos[beamName][2] - self.modelVolume[2]) < 500:
+                vector[2] = vector[2] + (self.partSize[self.colsPart['col' + beamName[5:]]][1] - self.partSize[self.xBeamsPart[beamName]][0]) / 2
+            self.updateInstancePos(self.xBeamsPos[beamName], vector)
+            assembly.translate(instanceList=tuple(self.allXBeams[beamName]), vector=vector)
+        surfStr = '';
+        for colName in self.allCols.keys():待解决
+            # surfs = self.getColSurfToBeam(colName)
+            # if surfs is not None:
+            #     surfs =
+            surfStr = surfStr + "self.getColSurfToBeam(%s)+" % colName
+
+        cmd = "assembly.Surface(side1Faces=%s, name='col-beam-surf')" % surfStr[:-1]
+        exec (cmd)
+            # cmd = "newpos = (self.zBeamsPos['%s'][0]+0,self.zBeamsPos['%s'][1]+0,self.zBeamsPos['%s'][2]+" % (beamName, beamName, beamName) +\
+            #       "self.partSize[self.colsPart['col'+beamName[4:]]][1]);" +\
+            #       "del self.zBeamsPos['%s'];"  % beamName +\
+            #       "self.zBeamsPos['%s'] = newpos;" % beamName +\
+            #       "assembly.translate(instanceList=tuple(self.allZBeams['%s']), vector=vector)" % beamName
+            # exec (cmd)
         # for i in range(4):
         #     cmd = "assembly.translate(instanceList=tuple(self.allCols['col-1-1-%d']), vector=self.colsPos['col-1-1-%d'])" % ((i+1),(i+1))
         #     exec(cmd)
@@ -190,6 +296,7 @@ class AbaqusStructureClass:
         # for key in mdb.models[self.modelName].parts.keys():
         #     if key[:2] == 'col' or key [:3] == 'beam':
         #         self.assignConcrete2Part('C20/25', mdb.models[self.modelName].parts[key])
+
 
 
 
@@ -278,7 +385,7 @@ class AbaqusStructureClass:
                                             integration=DURING_ANALYSIS, poissonRatio=0.3, profile='rebar-r%d' % radius,
                                             material=materialName, temperatureVar=LINEAR, consistentMassMatrix=False)
 
-    def assemblyRebarIntoConcrete(self,concretePart,rebarPart,instanceName = '',rebarStyle=[],beamXDirection = False):
+    def assemblyRebarIntoConcrete(self,concretePart,rebarPart,instanceName = '',rebarStyle=[]):
         if rebarStyle == []:
             rebarStyle = self.rebarStyle[concretePart]
 
@@ -296,7 +403,7 @@ class AbaqusStructureClass:
             name = concretePart+'-%d' % self.partCount[concretePart]
         else:
             name = instanceName
-        a.Instance(name=name, part=p, dependent=ON)
+        a.Instance(name=name, part=p, dependent=OFF)
 
         p = mdb.models[self.modelName].parts[rebarPart]
         if not self.partCount.has_key(name+'-'+rebarPart):
@@ -310,7 +417,7 @@ class AbaqusStructureClass:
         # rebarInstanceSubName =
         rebarInstanceName = name+'-'+rebarPart +\
                             '-%d' % self.partCount[name+'-'+rebarPart]
-        a.Instance(name=rebarInstanceName,part=p, dependent=ON)
+        a.Instance(name=rebarInstanceName,part=p, dependent=OFF)
         concreteAndRebarSet.append(rebarInstanceName)
         #a.translate(instanceList=('rebar-1-1',), vector=(2000.0, 0.0, 0.0))
         a.rotate(instanceList=(rebarInstanceName,),
@@ -395,13 +502,19 @@ class AbaqusStructureClass:
             vector = (0,self.partLength[concretePart],0)
             a.translate(instanceList=tuple(concreteAndRebarSet),
                         vector=vector)
+            self.colsPart[name] = concretePart
 
-        if concretePart[:4] == 'beam':
+        if concretePart[:4] == 'beam' and instanceName[:5] == 'zbeam':
             vector = (0, -self.partSize[concretePart][1], 0)
             a.translate(instanceList=tuple(concreteAndRebarSet),
                         vector=vector)
+            self.zBeamsPart[name] = concretePart
 
-        if beamXDirection:
+        if concretePart[:4] == 'beam' and instanceName[:5] == 'xbeam':
+            vector = (0, -self.partSize[concretePart][1], 0)
+            a.translate(instanceList=tuple(concreteAndRebarSet),
+                        vector=vector)
+            self.xBeamsPart[name] = concretePart
             a.rotate(instanceList=tuple(concreteAndRebarSet),
                      axisPoint=(0.0, 0.0, 0.0),
                      axisDirection=(0.0, -1.0, 0.0), angle=90.0)
@@ -410,6 +523,72 @@ class AbaqusStructureClass:
                         vector=vector)
 
         return concreteAndRebarSet
+
+    def updateInstancePos(self,pos,vector):
+        pos[0] = pos[0]+vector[0]
+        pos[1] = pos[1] + vector[1]
+        pos[2] = pos[2] + vector[2]
+        return pos
+        # if instanceName[:3] == 'col':
+        #     self.colsPos[instanceName] = (self.colsPos[instanceName][0]+vector[0],self.colsPos[instanceName][1]+vector[1],self.colsPos[instanceName][2]+vector[2])
+        #
+        # if instanceName[:4] == 'beam':
+        #     self.zBeamsPos[instanceName] = (self.zBeamsPos[instanceName][0] + vector[0], self.zBeamsPos[instanceName][1] + vector[1],
+        #               self.zBeamsPos[instanceName][2] + vector[2])
+
+    def getColSurfToBeam(self,colName):
+        if colName.count('-') != 3:
+            return
+        floor = int(colName[colName.find('-')+1:colName.find('-',colName.find('-')+1)])
+        xcount = int(colName[colName.find('-', colName.find('-') + 1) + 1:colName.find('-', colName.find('-', colName.find('-') + 1) + 1)])
+        zcount = int(colName[colName.rfind('-')+1:])
+        a = mdb.models[self.modelName].rootAssembly
+        if(self.colsBeamState[colName] == [1,1,1,1]):
+            leftSize = self.partSize[self.xBeamsPart['xbeam-%d-%d-%d' % (floor, xcount-1, zcount)]][:2]
+            rightSize = self.partSize[self.xBeamsPart['xbeam-%d-%d-%d' % (floor, xcount, zcount)]][:2]
+            upSize = self.partSize[self.zBeamsPart['zbeam-%d-%d-%d' % (floor, xcount, zcount-1)]][:2]
+            downSize = self.partSize[self.zBeamsPart['zbeam-%d-%d-%d' % (floor, xcount, zcount)]][:2]
+            if(leftSize[1]== rightSize[1] and upSize[1] == downSize[1] and leftSize[1] == upSize[1]):
+                c1 = a.instances[colName].cells
+                pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
+                v1 = a.instances['xbeam-%d-%d-%d' % (floor, xcount, zcount)].vertices
+                e1 = a.instances['xbeam-%d-%d-%d' % (floor, xcount, zcount)].edges
+                a.PartitionCellByPlanePointNormal(point=v1[6], normal=e1[7],cells=pickedCells)
+                if leftSize[0] == rightSize[0]:
+                    # 柱子右侧梁剖切面，下部线
+                    pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
+                    v1 = a.instances['xbeam-%d-%d-%d' % (floor, xcount, zcount)].vertices
+                    e1 = a.instances['xbeam-%d-%d-%d' % (floor, xcount, zcount)].edges
+                    a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
+                    # 柱子右侧梁剖切面，上部线
+                    pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
+                    v1 = a.instances['xbeam-%d-%d-%d' % (floor, xcount, zcount)].vertices
+                    e1 = a.instances['xbeam-%d-%d-%d' % (floor, xcount, zcount)].edges
+                    a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4], cells=pickedCells)
+                    # 柱子下侧梁剖切面，右部线
+                    pickedCells = c1.getSequenceFromMask(mask=('[#8 ]',), )
+                    v1 = a.instances['zbeam-%d-%d-%d' % (floor, xcount, zcount)].vertices
+                    e1 = a.instances['zbeam-%d-%d-%d' % (floor, xcount, zcount)].edges
+                    a.PartitionCellByPlanePointNormal(point=v1[5], normal=e1[6], cells=pickedCells)
+                    # 柱子下侧梁剖切面，左部线
+                    pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
+                    v1 = a.instances['zbeam-%d-%d-%d' % (floor, xcount, zcount)].vertices
+                    e1 = a.instances['zbeam-%d-%d-%d' % (floor, xcount, zcount)].edges
+                    a.PartitionCellByPlanePointNormal(point=v1[2], normal=e1[6], cells=pickedCells)
+                    # 柱子上侧梁剖切面，右部线
+                    pickedCells = c1.getSequenceFromMask(mask=('[#4 ]',), )
+                    v1 = a.instances['zbeam-%d-%d-%d' % (floor, xcount, zcount-1)].vertices
+                    e1 = a.instances['zbeam-%d-%d-%d' % (floor, xcount, zcount-1)].edges
+                    a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
+                    # 柱子上侧梁剖切面，左部线
+                    pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
+                    v1 = a.instances['zbeam-%d-%d-%d' % (floor, xcount, zcount - 1)].vertices
+                    e1 = a.instances['zbeam-%d-%d-%d' % (floor, xcount, zcount - 1)].edges
+                    a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4], cells=pickedCells)
+
+                    s1 = a.instances[colName].faces
+                    side1Faces1 = s1.getSequenceFromMask(mask=('[#88400000 #10 ]',), )
+                    return side1Faces1
 
 
 
