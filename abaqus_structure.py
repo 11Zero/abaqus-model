@@ -48,6 +48,7 @@ class AbaqusStructureClass:
         self.colsPos = {}
         self.colsPart = {}
         self.colsBeamState = {} #用于存储四个布尔值表示柱四周梁的有无[up,down,left,right]
+        self.colsColState = {} #用于存储两个布尔值表示柱子上下是否有柱子[up,down]
         self.allZBeams = {}
         self.zBeamsPos = {}
         self.zBeamsPart = {}
@@ -60,10 +61,7 @@ class AbaqusStructureClass:
         mdb.save()
 
     def startBuilding(self):
-        # keys = mdb.models.keys()
-        # for key in keys:
-        #     del mdb.models[key]
-        # mdb.Model(name=self.modelName, modelType=STANDARD_EXPLICIT)
+
         mdb.models.changeKey(fromName='Model-1', toName=self.modelName)  # 重命名模型
         session.viewports['Viewport: 1'].setValues(displayedObject=None)  # 设置视口
         mdb.saveAs(pathName=self.filePath)  # 存储
@@ -103,7 +101,8 @@ class AbaqusStructureClass:
                 height = 0
             else:
                 height = 4000+3300*(j-1)
-            for i in range(5):
+            for i in range(5):#沿x方向有5个柱子
+                #沿z方向有5个柱子
                 cmd = "self.colsPos['col-%d-%d-1'] = [4500*%d, %d, 0];" % ((j+1),(i+1),i,height) +\
                       "self.colsPos['col-%d-%d-2'] = [4500*%d, %d, 6600];"% ((j+1),(i+1),i,height) +\
                       "self.colsPos['col-%d-%d-3'] = [4500*%d, %d, 6600+2700];"% ((j+1),(i+1),i,height) +\
@@ -133,9 +132,12 @@ class AbaqusStructureClass:
             else:
                 self.colsBeamState[colName] = [1, 1, 1, 1]
 
+
+
         for j in range(2):
             height = 4000 + 3300 * j
-            for i in range(5):
+            for i in range(5):#沿x方向布置5次
+                #每次沿z方向有4段梁
                 cmd = "self.zBeamsPos['zbeam-%d-%d-1'] = [4500*%d, %d, 0];" % ((j + 1), (i + 1), i, height) + \
                       "self.zBeamsPos['zbeam-%d-%d-2'] = [4500*%d, %d, 6600];" % ((j + 1), (i + 1), i, height) + \
                       "self.zBeamsPos['zbeam-%d-%d-3'] = [4500*%d, %d, 6600+2700];" % ((j + 1), (i + 1), i, height) + \
@@ -144,28 +146,15 @@ class AbaqusStructureClass:
 
         for j in range(2):
             height = 4000 + 3300 * j
-            for i in range(4):
+            for i in range(4):#沿x方向布置4段
+                #每段有5个梁
                 cmd = "self.xBeamsPos['xbeam-%d-%d-1'] = [4500*%d, %d, 0];" % ((j + 1), (i + 1), i, height) + \
                       "self.xBeamsPos['xbeam-%d-%d-2'] = [4500*%d, %d, 6600];" % ((j + 1), (i + 1), i, height) + \
                       "self.xBeamsPos['xbeam-%d-%d-3'] = [4500*%d, %d, 6600+2700];" % ((j + 1), (i + 1), i, height) + \
                       "self.xBeamsPos['xbeam-%d-%d-4'] = [4500*%d, %d, 6600+2700+6600];" % ((j + 1), (i + 1), i, height) +\
                       "self.xBeamsPos['xbeam-%d-%d-5'] = [4500*%d, %d, 6600+2700+6600+6600]" % ((j + 1), (i + 1), i, height)
                 exec (cmd)
-        # print self.zBeamsPos.keys()
-        # self.colsPos['col-1-1-1'] = (4500*0, 0, 0)
-        # self.colsPos['col-1-1-2'] = (4500*0, 0, 6600)
-        # self.colsPos['col-1-1-3'] = (4500*0, 0, 6600+2700)
-        # self.colsPos['col-1-1-4'] = (4500*0, 0, 6600+2700+6600)
-        #
-        # self.colsPos['col-1-2-1'] = (4500*1, 0, 0)
-        # self.colsPos['col-1-2-2'] = (4500*1, 0, 6600)
-        # self.colsPos['col-1-2-3'] = (4500*1, 0, 6600 + 2700)
-        # self.colsPos['col-1-2-4'] = (4500*1, 0, 6600 + 2700 + 6600)
-        #
-        # self.colsPos['col-1-3-1'] = (4500*2, 0, 0)
-        # self.colsPos['col-1-3-2'] = (4500*2, 0, 6600)
-        # self.colsPos['col-1-3-3'] = (4500*2, 0, 6600 + 2700)
-        # self.colsPos['col-1-3-4'] = (4500*2, 0, 6600 + 2700 + 6600)
+
 
 
         for colName in self.colsPos.keys():
@@ -183,37 +172,7 @@ class AbaqusStructureClass:
 
         for beamName in self.xBeamsPos.keys():
             self.allXBeams[beamName] = self.assemblyRebarIntoConcrete('beam-3', 'rebar-5', beamName)
-        # for i in range(4):
-        #     cmd = "self.allCols['col-1-1-%d'] = self.assemblyRebarIntoConcrete('col-1', 'rebar-1')" % (i+1)
-        #     exec(cmd)
-        # self.allCols['col-1-1-1'] = self.assemblyRebarIntoConcrete( 'col-1', 'rebar-1')
-        # self.allCols['col-1-1-2'] = self.assemblyRebarIntoConcrete('col-1', 'rebar-1')
-        # self.allCols['col-1-1-3'] = self.assemblyRebarIntoConcrete('col-1', 'rebar-1')
-        # self.allCols['col-1-1-4'] = self.assemblyRebarIntoConcrete('col-1', 'rebar-1')
 
-        # for i in range(4):
-        #     cmd = "self.allCols['col-1-2-%d'] = self.assemblyRebarIntoConcrete('col-2', 'rebar-2')" % (i+1)
-        #     exec(cmd)
-        # self.allCols['col-1-2-1'] = self.assemblyRebarIntoConcrete('col-2', 'rebar-2')
-        # self.allCols['col-1-2-2'] = self.assemblyRebarIntoConcrete('col-2', 'rebar-2')
-        # self.allCols['col-1-2-3'] = self.assemblyRebarIntoConcrete('col-2', 'rebar-2')
-        # self.allCols['col-1-2-4'] = self.assemblyRebarIntoConcrete('col-2', 'rebar-2')
-
-        # for i in range(4):
-        #     cmd = "self.allCols['col-1-3-%d'] = self.assemblyRebarIntoConcrete('col-2', 'rebar-2')" % (i+1)
-        #     exec(cmd)
-        # self.allCols['col-1-3-1'] = self.assemblyRebarIntoConcrete('col-2', 'rebar-2')
-        # self.allCols['col-1-3-2'] = self.assemblyRebarIntoConcrete('col-2', 'rebar-2')
-        # self.allCols['col-1-3-3'] = self.assemblyRebarIntoConcrete('col-2', 'rebar-2')
-        # self.allCols['col-1-3-4'] = self.assemblyRebarIntoConcrete('col-2', 'rebar-2')
-
-        # for i in range(4):
-        #     cmd = "self.allCols['col-1-2-%d'] = self.assemblyRebarIntoConcrete('col-2', 'rebar-2')" % (i+1)
-        #     exec(cmd)
-        # beam1 = self.assemblyRebarIntoConcrete('beam-1', 'rebar-3',[[300],[275,275]],True)
-        # beam2 = self.assemblyRebarIntoConcrete('beam-1', 'rebar-3',[[300],[275,275]])
-        # beam3 = self.assemblyRebarIntoConcrete('beam-1', 'rebar-3',[[300],[275,275]])
-        # beam4 = self.assemblyRebarIntoConcrete('beam-1', 'rebar-3',[[300],[275,275]])
 
         assembly = mdb.models[self.modelName].rootAssembly
         assembly.DatumCsysByDefault(CARTESIAN)
@@ -249,7 +208,6 @@ class AbaqusStructureClass:
                 vector[2] = vector[2] + (self.partSize[self.colsPart['col' + beamName[5:]]][1] - self.partSize[self.xBeamsPart[beamName]][0]) / 2
             self.updateInstancePos(self.xBeamsPos[beamName], vector)
             assembly.translate(instanceList=tuple(self.allXBeams[beamName]), vector=vector)
-        surfStr = '';
         # for colName in self.allCols.keys():
         #     # surfs = self.getColSurfToBeam(colName)
         #     # if surfs is not None:
@@ -258,6 +216,83 @@ class AbaqusStructureClass:
         #
         # cmd = "assembly.Surface(side1Faces=%s, name='col-beam-surf')" % surfStr[:-1]
         # exec (cmd)
+        bottomColBottomSurfs = []
+        for colName in self.allCols.keys():
+            self.colsColState[colName] = [1, 1]
+            if abs(self.colsPos[colName][1] - 0) < 500:
+                bottomColBottomSurfs.append(self.getColBottomSurf(colName))
+                self.colsColState[colName][1] = 0
+            if abs(self.colsPos[colName][1] + self.partSize[self.colsPart[colName]][2] - self.modelVolume[1]) < 500:
+                self.colsColState[colName][0] = 0
+
+        totalSurfs = None
+        validIndex = 0
+        for i in range(len(bottomColBottomSurfs)):
+            if bottomColBottomSurfs[i] is not None:
+                totalSurfs = bottomColBottomSurfs[i]
+                validIndex = i
+                break
+        for i in range(validIndex + 1, len(bottomColBottomSurfs)):
+            if bottomColBottomSurfs[i] is not None:
+                totalSurfs = totalSurfs + bottomColBottomSurfs[i]
+        if totalSurfs is not None:
+            assembly.Set(faces=totalSurfs, name='set-bottomcol-bottomsurf')
+            # assembly.Surface(side1Faces=totalSurfs, name='col-top-surf')
+
+        # c1 = assembly.instances['col-2-4-2'].cells
+        # # cells1 = c1.getSequenceFromMask(mask=('[#ffff ]',), )
+        # assembly.Set(cells=c1, name='Set-4')
+
+        concreteInstance = []
+        rebarInstance = []
+        for instanceName in assembly.instances.keys():
+            if (not ('rebar' in instanceName)) and ('col' in instanceName or 'xbeam' in instanceName or 'zbeam' in instanceName):
+                concreteInstance.append(assembly.instances[instanceName])
+            if 'rebar' in instanceName:
+                rebarInstance.append(assembly.instances[instanceName])
+
+        concreteCells = concreteInstance[0].cells
+        for i in range(1,len(concreteInstance)):
+            concreteCells = concreteCells + concreteInstance[i].cells
+        assembly.Set(cells=concreteCells, name='set-concrete')
+
+        rebarEdges = rebarInstance[0].edges
+        for i in range(1, len(rebarInstance)):
+            rebarEdges = rebarEdges + rebarInstance[i].edges
+        assembly.Set(edges=rebarEdges, name='set-rebar')
+
+
+        surfs = []
+        for colName in self.allCols.keys():
+            surfs.append(self.getColTopSurf(colName))
+        totalSurfs = None
+        validIndex = 0
+        for i in range(len(surfs)):
+            if surfs[i] is not None:
+                totalSurfs = surfs[i]
+                validIndex = i
+                break
+        for i in range(validIndex + 1, len(surfs)):
+            if surfs[i] is not None:
+                totalSurfs = totalSurfs + surfs[i]
+        if totalSurfs is not None:
+            assembly.Surface(side1Faces=totalSurfs, name='col-top-surf')
+
+        surfs = []
+        for colName in self.allCols.keys():
+            surfs.append(self.getColBottomSurf(colName))
+        totalSurfs = None
+        validIndex = 0
+        for i in range(len(surfs)):
+            if surfs[i] is not None:
+                totalSurfs = surfs[i]
+                validIndex = i
+                break
+        for i in range(validIndex + 1, len(surfs)):
+            if surfs[i] is not None:
+                totalSurfs = totalSurfs + surfs[i]
+        if totalSurfs is not None:
+            assembly.Surface(side1Faces=totalSurfs, name='col-bottom-surf')
 
         surfs = []
         for colName in self.allCols.keys():
@@ -274,38 +309,141 @@ class AbaqusStructureClass:
                 totalSurfs = totalSurfs + surfs[i]
         if totalSurfs is not None:
             assembly.Surface(side1Faces=totalSurfs, name='col-beam-surf')
-            # cmd = "newpos = (self.zBeamsPos['%s'][0]+0,self.zBeamsPos['%s'][1]+0,self.zBeamsPos['%s'][2]+" % (beamName, beamName, beamName) +\
-            #       "self.partSize[self.colsPart['col'+beamName[4:]]][1]);" +\
-            #       "del self.zBeamsPos['%s'];"  % beamName +\
-            #       "self.zBeamsPos['%s'] = newpos;" % beamName +\
-            #       "assembly.translate(instanceList=tuple(self.allZBeams['%s']), vector=vector)" % beamName
-            # exec (cmd)
-        # for i in range(4):
-        #     cmd = "assembly.translate(instanceList=tuple(self.allCols['col-1-1-%d']), vector=self.colsPos['col-1-1-%d'])" % ((i+1),(i+1))
-        #     exec(cmd)
-        # assembly.translate(instanceList=tuple(self.allCols['col-1-1-1']), vector=self.colsPos['col-1-1-1'])
-        # assembly.translate(instanceList=tuple(self.allCols['col-1-1-2']), vector=self.colsPos['col-1-1-2'])
-        # assembly.translate(instanceList=tuple(self.allCols['col-1-1-3']), vector=self.colsPos['col-1-1-3'])
-        # assembly.translate(instanceList=tuple(self.allCols['col-1-1-4']), vector=self.colsPos['col-1-1-4'])
 
-        # for i in range(4):
-        #     cmd = "assembly.translate(instanceList=tuple(self.allCols['col-1-2-%d']), vector=self.colsPos['col-1-2-%d'])" % ((i+1),(i+1))
-        #     exec(cmd)
-        # assembly.translate(instanceList=tuple(self.allCols['col-1-2-1']), vector=self.colsPos['col-1-2-1'])
-        # assembly.translate(instanceList=tuple(self.allCols['col-1-2-2']), vector=self.colsPos['col-1-2-2'])
-        # assembly.translate(instanceList=tuple(self.allCols['col-1-2-3']), vector=self.colsPos['col-1-2-3'])
-        # assembly.translate(instanceList=tuple(self.allCols['col-1-2-4']), vector=self.colsPos['col-1-2-4'])
+        surfs = []
+        for xBeamName in self.allXBeams.keys():
+            surfs.append(self.getBeamSurfToCol(xBeamName))
+        xtotalSurfs = None
+        validIndex = 0
+        for i in range(len(surfs)):
+            if surfs[i] is not None:
+                xtotalSurfs = surfs[i]
+                validIndex = i
+                break
+        for i in range(validIndex + 1, len(surfs)):
+            if surfs[i] is not None:
+                xtotalSurfs = xtotalSurfs + surfs[i]
 
-        # for i in range(4):
-        #     cmd = "assembly.translate(instanceList=tuple(self.allCols['col-1-3-%d']), vector=self.colsPos['col-1-3-%d'])" % ((i+1),(i+1))
-        #     exec(cmd)
-        # assembly.translate(instanceList=tuple(self.allCols['col-1-3-1']), vector=self.colsPos['col-1-3-1'])
-        # assembly.translate(instanceList=tuple(self.allCols['col-1-3-2']), vector=self.colsPos['col-1-3-2'])
-        # assembly.translate(instanceList=tuple(self.allCols['col-1-3-3']), vector=self.colsPos['col-1-3-3'])
-        # assembly.translate(instanceList=tuple(self.allCols['col-1-3-4']), vector=self.colsPos['col-1-3-4'])
+        surfs = []
+        for zBeamName in self.allZBeams.keys():
+            surfs.append(self.getBeamSurfToCol(zBeamName))
+        ztotalSurfs = None
+        validIndex = 0
+        for i in range(len(surfs)):
+            if surfs[i] is not None:
+                ztotalSurfs = surfs[i]
+                validIndex = i
+                break
+        for i in range(validIndex + 1, len(surfs)):
+            if surfs[i] is not None:
+                ztotalSurfs = ztotalSurfs + surfs[i]
 
-        # assembly.translate(instanceList=beam1, vector=(0, 4000, 0))
-        # assembly.translate(instanceList=beam2, vector=(0, 4000, 0))
+        totalSurfs = None
+        if xtotalSurfs is not None and ztotalSurfs is not None:
+            totalSurfs = xtotalSurfs+ztotalSurfs
+        elif xtotalSurfs is not None:
+            totalSurfs = xtotalSurfs
+        elif ztotalSurfs is not None:
+            totalSurfs = ztotalSurfs
+
+        if totalSurfs is not None:
+            assembly.Surface(side1Faces=totalSurfs, name='beam-col-surf')
+
+
+        region1 = assembly.surfaces['col-beam-surf']
+        region2 = assembly.surfaces['beam-col-surf']
+        mdb.models[self.modelName].Tie(name='constraint-col-beam', master=region1, slave=region2,
+                                    positionToleranceMethod=COMPUTED, adjust=ON, tieRotations=ON, thickness=ON)
+
+        region1 = assembly.surfaces['col-top-surf']
+        region2 = assembly.surfaces['col-bottom-surf']
+        mdb.models[self.modelName].Tie(name='constraint-col-col', master=region1, slave=region2,
+                                       positionToleranceMethod=COMPUTED, adjust=ON, tieRotations=ON, thickness=ON)
+
+        region1 = assembly.sets['set-rebar']
+        region2 = assembly.sets['set-concrete']
+        mdb.models[self.modelName].EmbeddedRegion(name='constraint-concrete-rebar',
+                                               embeddedRegion=region1, hostRegion=region2, weightFactorTolerance=1e-06,
+                                               absoluteTolerance=0.0, fractionalTolerance=0.05, toleranceMethod=BOTH)
+
+        print '设置地震分析步'
+        import json
+        data = None
+        ProgramPath = 'F:/documents/Abaqus/abaqus-model/'
+        amplitudeName = 'Vrance N-S Acc'
+        with open(ProgramPath + 'EQ/' + amplitudeName+'.json') as json_file:
+            data = json.load(json_file)
+        if data is not None:
+            mdb.models[self.modelName].TabularAmplitude(name=amplitudeName, timeSpan=STEP,smooth=SOLVER_DEFAULT, data=data)
+        EQStepName= 'step-EQ'
+        mdb.models[self.modelName].ImplicitDynamicsStep(name=EQStepName,
+                                                     previous='Initial',timePeriod=data[-1][0], maxNumInc=int(100000*data[-1][0]),
+                                                     initialInc=data[1][0],
+                                                     minInc=1e-05)
+        print '地震分析步设置完成'
+        #该句为地震分析步的几何非线性开关
+        print '设置地震分析步的几何非线性'
+        mdb.models[self.modelName].steps[EQStepName].setValues(nlgeom=ON)
+        print '地震分析步的几何非线性设置完成'
+        #添加重力荷载
+        print '添加重力荷载'
+        mdb.models[self.modelName].Gravity(name='load-gravity', createStepName=EQStepName,
+                                        comp2=-9807.0, distributionType=UNIFORM, field='')
+        print '重力荷载添加完成'
+        #添加底部xy方向位移约束
+        print '设置结构底部约束'
+        region = assembly.sets['set-bottomcol-bottomsurf']
+        mdb.models[self.modelName].DisplacementBC(name='FS', createStepName=EQStepName,
+                                               region=region, u1=0.0, u2=0.0, u3=UNSET, ur1=UNSET, ur2=UNSET, ur3=UNSET,
+                                               amplitude=UNSET, fixed=OFF, distributionType=UNIFORM, fieldName='',
+                                               localCsys=None)
+        #添加底部z方向加速度，加速度在时程分析步中以下面输入的初值v3乘以幅值来进行计算，切记abaqus当前单位为mm，而地震步中加速度按m/s2输入的，因此v3需记得变换
+        region = assembly.sets['set-bottomcol-bottomsurf']
+        mdb.models[self.modelName].VelocityBC(name='MS', createStepName=EQStepName,
+                                           region=region, v1=UNSET, v2=UNSET, v3=100000.0, vr1=UNSET, vr2=UNSET,
+                                           vr3=UNSET, amplitude=amplitudeName, localCsys=None,
+                                           distributionType=UNIFORM, fieldName='')
+        print '结构底部约束设置完成'
+
+
+        #撒种子
+        print '开始实例网格划分'
+        assembly.seedPartInstance(regions=concreteInstance, size=75.0, deviationFactor=0.1,
+                            minSizeFactor=0.1)
+        assembly.generateMesh(regions=concreteInstance)
+
+        assembly.seedPartInstance(regions=rebarInstance, size=200.0, deviationFactor=0.1,
+                                  minSizeFactor=0.1)
+        assembly.generateMesh(regions=rebarInstance)
+        print '实例网格划分完成'
+
+        #历程输出请求
+        GV = tuple(['GV'])  # 广义速度
+        GA = tuple(['GA'])  # 广义加速度
+        IRA = 'IRA1', 'IRA2', 'IRA3', 'IRAR1', 'IRAR2', 'IRAR3'#惯性释放等同于刚体加速度,
+        IRF = 'IRF1', 'IRF2', 'IRF3', 'IRM1', 'IRM2', 'IRM3'#作用力反作用力-惯性释放荷载相应于同等的刚体加速度
+        ALLEN = 'ALLAE', 'ALLCD', 'ALLDMD','ALLEE', 'ALLFD', 'ALLIE', 'ALLJD', \
+                'ALLKE', 'ALLKL', 'ALLPD', 'ALLQB','ALLSE', 'ALLSD', 'ALLVD', 'ALLWK', 'ETOTAL'#总能量
+        BROKEN = 'DBS11', 'DBS12', 'DBT', 'DBSF', 'OPENBC', 'CRSTS11', \
+                 'CRSTS12', 'CRSTS13', 'ENRRT11', 'ENRRT12', 'ENRRT13', \
+                 'EFENRRTR', 'BDSTAT', 'CSDMG',  'CSMAXSCRT', 'CSMAXUCRT',\
+                 'CSQUADSCRT', 'CSQUADUCRT'#破坏断裂
+        variables = GV+GA+ALLEN+BROKEN
+        mdb.models[self.modelName].historyOutputRequests['H-Output-1'].setValues(variables=variables)
+        #创建任务
+        print '创建任务'
+        jobName = 'Job-1'
+        mdb.Job(name=jobName, model=self.modelName, description='', type=ANALYSIS,
+                atTime=None, waitMinutes=0, waitHours=0, queue=None, memory=90,
+                memoryUnits=PERCENTAGE, getMemoryFromAnalysis=True,
+                explicitPrecision=SINGLE, nodalOutputPrecision=SINGLE, echoPrint=OFF,
+                modelPrint=OFF, contactPrint=OFF, historyPrint=OFF, userSubroutine='',
+                scratch='', resultsFormat=ODB, multiprocessingMode=DEFAULT, numCpus=1,
+                numGPUs=0)
+        #任务数据检查
+        print '任务数据检查'
+        mdb.jobs[jobName].submit(consistencyChecking=OFF, datacheckJob=True)
+        print '任务数据检查中...'
 
 
         session.viewports['Viewport: 1'].setValues(displayedObject=mdb.models[self.modelName].rootAssembly)
@@ -313,9 +451,6 @@ class AbaqusStructureClass:
 
 
 
-        # for key in mdb.models[self.modelName].parts.keys():
-        #     if key[:2] == 'col' or key [:3] == 'beam':
-        #         self.assignConcrete2Part('C20/25', mdb.models[self.modelName].parts[key])
 
 
 
@@ -346,7 +481,7 @@ class AbaqusStructureClass:
         p.SectionAssignment(region=region, sectionName=section, offset=0.0,
                             offsetType=MIDDLE_SURFACE, offsetField='',
                             thicknessAssignment=FROM_SECTION)
-        session.viewports['Viewport: 1'].setValues(displayedObject=p)
+        # session.viewports['Viewport: 1'].setValues(displayedObject=p)
         del mdb.models[self.modelName].sketches['__profile__']
         return p
 
@@ -377,7 +512,7 @@ class AbaqusStructureClass:
                             offsetType=MIDDLE_SURFACE, offsetField='',
                             thicknessAssignment=FROM_SECTION)
         p.assignBeamSectionOrientation(region=region, method=N1_COSINES, n1=(0.0, 0.0,-1.0))
-        session.viewports['Viewport: 1'].setValues(displayedObject=p)
+        # session.viewports['Viewport: 1'].setValues(displayedObject=p)
         del mdb.models[self.modelName].sketches['__profile__']
         return p
 
@@ -567,618 +702,213 @@ class AbaqusStructureClass:
         colSize = self.partSize[self.colsPart[colName]]
         colTopCenterAxis = [self.colsPos[colName][0]+colSize[0]/2 , self.colsPos[colName][1]+colSize[2],self.colsPos[colName][2]+colSize[1]/2]
         surfPoints = []
-        if(self.colsBeamState[colName] == [1,1,1,1]):
-            leftSize = self.partSize[self.xBeamsPart['xbeam-%d-%d-%d' % (floor, xcount-1, zcount)]][:2]
-            rightSize = self.partSize[self.xBeamsPart['xbeam-%d-%d-%d' % (floor, xcount, zcount)]][:2]
-            upSize = self.partSize[self.zBeamsPart['zbeam-%d-%d-%d' % (floor, xcount, zcount-1)]][:2]
-            downSize = self.partSize[self.zBeamsPart['zbeam-%d-%d-%d' % (floor, xcount, zcount)]][:2]
 
+        v11 = a.instances[colName].vertices
+        c1 = a.instances[colName].cells
+        pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
 
+        a.PartitionCellByPlaneThreePoints(point1=v11[3], point2=v11[5], point3=v11[4],
+                                          cells=pickedCells)
 
-            leftName = 'xbeam-%d-%d-%d' % (floor, xcount - 1, zcount)
-            rightName = 'xbeam-%d-%d-%d' % (floor, xcount, zcount)
+        c1 = a.instances[colName].cells
+        pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
+        v11 = a.instances[colName].vertices
+        a.PartitionCellByPlaneThreePoints(point1=v11[6], point2=v11[5], point3=v11[7],
+                                          cells=pickedCells)
+
+        c1 = a.instances[colName].cells
+        pickedCells = c1.getSequenceFromMask(mask=('[#4 ]',), )
+        v11 = a.instances[colName].vertices
+        a.PartitionCellByPlaneThreePoints(point1=v11[2], point2=v11[8], point3=v11[9],
+                                          cells=pickedCells)
+        # if(self.colsBeamState[colName] == [1,1,1,1]):
+        if self.colsBeamState[colName][0] == 1:
+            upSize = self.partSize[self.zBeamsPart['zbeam-%d-%d-%d' % (floor, xcount, zcount - 1)]][:2]
             upName = 'zbeam-%d-%d-%d' % (floor, xcount, zcount - 1)
-            downName = 'zbeam-%d-%d-%d' % (floor, xcount, zcount)
-
-            v11 = a.instances[colName].vertices
-            c1 = a.instances[colName].cells
-            pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-
-            a.PartitionCellByPlaneThreePoints(point1=v11[3], point2=v11[5], point3=v11[4],
-                                              cells=pickedCells)
-
-            c1 = a.instances[colName].cells
-            pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            v11 = a.instances[colName].vertices
-            a.PartitionCellByPlaneThreePoints(point1=v11[6], point2=v11[5], point3=v11[7],
-                                              cells=pickedCells)
-
-            c1 = a.instances[colName].cells
-            pickedCells = c1.getSequenceFromMask(mask=('[#4 ]',), )
-            v11 = a.instances[colName].vertices
-            a.PartitionCellByPlaneThreePoints(point1=v11[2], point2=v11[8], point3=v11[9],
-                                              cells=pickedCells)
-
-            #柱子左侧横向剖切
-            c1 = a.instances[colName].cells
-            pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            f1 = a.instances[leftName].faces
-            a.PartitionCellByExtendFace(extendFace=f1[3], cells=pickedCells)
-            # v1 = a.instances[leftName].vertices
-            # e1 = a.instances[leftName].edges
-            # a.PartitionCellByPlanePointNormal(point=v1[7], normal=e1[9], cells=pickedCells)
-
-            # 柱子右侧横向剖切
-            c1 = a.instances[colName].cells
-            pickedCells = c1.getSequenceFromMask(mask=('[#10 ]',), )
-            f1 = a.instances[rightName].faces
-            a.PartitionCellByExtendFace(extendFace=f1[3], cells=pickedCells)
-            # v1 = a.instances[rightName].vertices
-            # e1 = a.instances[rightName].edges
-            # a.PartitionCellByPlanePointNormal(point=v1[6], normal=e1[7], cells=pickedCells)
-
-            # 柱子下侧横向剖切
-            c1 = a.instances[colName].cells
-            pickedCells = c1.getSequenceFromMask(mask=('[#10 ]',), )
-            f1 = a.instances[downName].faces
-            a.PartitionCellByExtendFace(extendFace=f1[3], cells=pickedCells)
-            # v1 = a.instances[downName].vertices
-            # e1 = a.instances[downName].edges
-            # a.PartitionCellByPlanePointNormal(point=v1[7], normal=e1[9], cells=pickedCells)
-
             # 柱子上侧横向剖切
             c1 = a.instances[colName].cells
-            pickedCells = c1.getSequenceFromMask(mask=('[#8 ]',), )
+            # pickedCells = c1.getSequenceFromMask(mask=('[#8 ]',), )
+            pickedCells = c1.findAt(
+                ((colTopCenterAxis[0], colTopCenterAxis[1] - 5, colTopCenterAxis[2] - 5),), )
             f1 = a.instances[upName].faces
             a.PartitionCellByExtendFace(extendFace=f1[3], cells=pickedCells)
-            # v1 = a.instances[upName].vertices
-            # e1 = a.instances[upName].edges
-            # a.PartitionCellByPlanePointNormal(point=v1[6], normal=e1[7], cells=pickedCells)
+
+            if self.zBeamsPos[upName][0] > self.colsPos[colName][0]:
+                c1 = a.instances[colName].cells
+                pickedCells = c1.findAt(
+                    ((colTopCenterAxis[0], colTopCenterAxis[1] - 5, colTopCenterAxis[2] - 5),), )
+                f1 = a.instances[upName].faces
+                a.PartitionCellByExtendFace(extendFace=f1[0], cells=pickedCells)
+                # v1 = a.instances[upName].vertices
+                # e1 = a.instances[upName].edges
+                # a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
+
+            if self.zBeamsPos[upName][0] + upSize[0] < self.colsPos[colName][0] + colSize[0]:
+                c1 = a.instances[colName].cells
+                pickedCells = c1.findAt(
+                    ((colTopCenterAxis[0], colTopCenterAxis[1] - 5, colTopCenterAxis[2] - 5),), )
+                f1 = a.instances[upName].faces
+                a.PartitionCellByExtendFace(extendFace=f1[2], cells=pickedCells)
+                # v1 = a.instances[upName].vertices
+                # e1 = a.instances[upName].edges
+                # a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4], cells=pickedCells)
+            surfPoints.append([self.colsPos[colName][0] + colSize[0] / 2, self.colsPos[colName][1] + colSize[2] - 5,
+                               self.colsPos[colName][2]])
+        if self.colsBeamState[colName][1] == 1:
+            downSize = self.partSize[self.zBeamsPart['zbeam-%d-%d-%d' % (floor, xcount, zcount)]][:2]
+            downName = 'zbeam-%d-%d-%d' % (floor, xcount, zcount)
+            # 柱子下侧横向剖切
+            c1 = a.instances[colName].cells
+            # pickedCells = c1.getSequenceFromMask(mask=('[#10 ]',), )
+            pickedCells = c1.findAt(
+                ((colTopCenterAxis[0], colTopCenterAxis[1] - 5, colTopCenterAxis[2] + 5),), )
+            f1 = a.instances[downName].faces
+            a.PartitionCellByExtendFace(extendFace=f1[3], cells=pickedCells)
+            # 柱子下侧竖向左部剖切
+            if self.zBeamsPos[downName][0] > self.colsPos[colName][0]:
+                c1 = a.instances[colName].cells
+                pickedCells = c1.findAt(
+                    ((colTopCenterAxis[0], colTopCenterAxis[1] - 5, colTopCenterAxis[2] + 5),), )
+                f1 = a.instances[downName].faces
+                a.PartitionCellByExtendFace(extendFace=f1[0], cells=pickedCells)
+                # v1 = a.instances[downName].vertices
+                # e1 = a.instances[downName].edges
+                # a.PartitionCellByPlanePointNormal(point=v1[5], normal=e1[6], cells=pickedCells)
+            # 柱子下侧竖向右部剖切
+            if self.zBeamsPos[downName][0] + downSize[0] < self.colsPos[colName][0] + colSize[0]:
+                c1 = a.instances[colName].cells
+                pickedCells = c1.findAt(
+                    ((colTopCenterAxis[0], colTopCenterAxis[1] - 5, colTopCenterAxis[2] + 5),), )
+                f1 = a.instances[downName].faces
+                a.PartitionCellByExtendFace(extendFace=f1[2], cells=pickedCells)
+                # v1 = a.instances[downName].vertices
+                # e1 = a.instances[downName].edges
+                # a.PartitionCellByPlanePointNormal(point=v1[2], normal=e1[6], cells=pickedCells)
+            surfPoints.append([self.colsPos[colName][0] + colSize[0] / 2, self.colsPos[colName][1] + colSize[2] - 5,
+                               self.colsPos[colName][2] + colSize[1]])
+        if self.colsBeamState[colName][2] == 1:
+            leftSize = self.partSize[self.xBeamsPart['xbeam-%d-%d-%d' % (floor, xcount-1, zcount)]][:2]
+            leftName = 'xbeam-%d-%d-%d' % (floor, xcount - 1, zcount)
+            # 柱子左侧横向剖切
+            c1 = a.instances[colName].cells
+            # pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
+            pickedCells = c1.findAt(((colTopCenterAxis[0] - 5, colTopCenterAxis[1] - 5, colTopCenterAxis[2]),), )
+            f1 = a.instances[leftName].faces
+            a.PartitionCellByExtendFace(extendFace=f1[3], cells=pickedCells)
 
             # 柱子左侧竖向上部剖切
-            if self.xBeamsPos[leftName][2] > self.colsPos[colName][2] and self.xBeamsPos[leftName][2] + leftSize[0] < self.colsPos[colName][2] + colSize[1]:
-                    c1 = a.instances[colName].cells
-                    # pickedCells = c1.getSequenceFromMask(mask=('[#20 ]',), )
-                    pickedCells = c1.findAt(((colTopCenterAxis[0]-5,colTopCenterAxis[1]-5,colTopCenterAxis[2]),),)
-                    f1 = a.instances[leftName].faces
-                    a.PartitionCellByExtendFace(extendFace=f1[0], cells=pickedCells)
-                    # v1 = a.instances[leftName].vertices
-                    # e1 = a.instances[leftName].edges
-                    # a.PartitionCellByPlanePointNormal(point=v1[2], normal=e1[6], cells=pickedCells)
+            if self.xBeamsPos[leftName][2] > self.colsPos[colName][2]:
+                c1 = a.instances[colName].cells
+                # pickedCells = c1.getSequenceFromMask(mask=('[#20 ]',), )
+                pickedCells = c1.findAt(((colTopCenterAxis[0] - 5, colTopCenterAxis[1] - 5, colTopCenterAxis[2]),), )
+                f1 = a.instances[leftName].faces
+                a.PartitionCellByExtendFace(extendFace=f1[0], cells=pickedCells)
+                # v1 = a.instances[leftName].vertices
+                # e1 = a.instances[leftName].edges
+                # a.PartitionCellByPlanePointNormal(point=v1[2], normal=e1[6], cells=pickedCells)
+            # 柱子左侧竖向下部剖切
+            if self.xBeamsPos[leftName][2] + leftSize[0] < self.colsPos[colName][2] + colSize[1]:
+                c1 = a.instances[colName].cells
+                pickedCells = c1.findAt(
+                    ((colTopCenterAxis[0] - 5, colTopCenterAxis[1] - 5, colTopCenterAxis[2]),), )
+                f1 = a.instances[leftName].faces
+                a.PartitionCellByExtendFace(extendFace=f1[2], cells=pickedCells)
 
-                    c1 = a.instances[colName].cells
-                    pickedCells = c1.findAt(
-                        ((colTopCenterAxis[0] - 5, colTopCenterAxis[1] - 5, colTopCenterAxis[2]),), )
-                    f1 = a.instances[leftName].faces
-                    a.PartitionCellByExtendFace(extendFace=f1[2], cells=pickedCells)
-                    # v1 = a.instances[leftName].vertices
-                    # e1 = a.instances[leftName].edges
-                    # a.PartitionCellByPlanePointNormal(point=v1[5], normal=e1[6], cells=pickedCells)
-                    surfPoints.append([self.colsPos[colName][0] , self.colsPos[colName][1]+colSize[2]-5,self.colsPos[colName][2]+colSize[1]/2])
-                    if self.xBeamsPos[rightName][2] > self.colsPos[colName][2] and self.xBeamsPos[rightName][2] + rightSize[0] < self.colsPos[colName][2] + colSize[1]:
-                        c1 = a.instances[colName].cells
-                        pickedCells = c1.findAt(
-                            ((colTopCenterAxis[0] + 5, colTopCenterAxis[1] - 5, colTopCenterAxis[2]),), )
-                        f1 = a.instances[rightName].faces
-                        a.PartitionCellByExtendFace(extendFace=f1[0], cells=pickedCells)
-                        # v1 = a.instances[rightName].vertices
-                        # e1 = a.instances[rightName].edges
-                        # a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
+            surfPoints.append([self.colsPos[colName][0], self.colsPos[colName][1] + colSize[2] - 5,
+                               self.colsPos[colName][2] + colSize[1] / 2])
+        if self.colsBeamState[colName][3] == 1:
+            rightSize = self.partSize[self.xBeamsPart['xbeam-%d-%d-%d' % (floor, xcount, zcount)]][:2]
+            rightName = 'xbeam-%d-%d-%d' % (floor, xcount, zcount)
+            # 柱子右侧横向剖切
+            c1 = a.instances[colName].cells
+            # pickedCells = c1.getSequenceFromMask(mask=('[#10 ]',), )
+            pickedCells = c1.findAt(
+                ((colTopCenterAxis[0] + 5, colTopCenterAxis[1] - 5, colTopCenterAxis[2]),), )
+            f1 = a.instances[rightName].faces
+            a.PartitionCellByExtendFace(extendFace=f1[3], cells=pickedCells)
+            # 柱子左侧竖向上部剖切
+            if self.xBeamsPos[rightName][2] > self.colsPos[colName][2]:
+                c1 = a.instances[colName].cells
+                pickedCells = c1.findAt(
+                    ((colTopCenterAxis[0] + 5, colTopCenterAxis[1] - 5, colTopCenterAxis[2]),), )
+                f1 = a.instances[rightName].faces
+                a.PartitionCellByExtendFace(extendFace=f1[0], cells=pickedCells)
+                # v1 = a.instances[rightName].vertices
+                # e1 = a.instances[rightName].edges
+                # a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
+            # 柱子左侧竖向下部剖切
+            if self.xBeamsPos[rightName][2] + rightSize[0] < self.colsPos[colName][2] + colSize[1]:
+                c1 = a.instances[colName].cells
+                pickedCells = c1.findAt(
+                    ((colTopCenterAxis[0] + 5, colTopCenterAxis[1] - 5, colTopCenterAxis[2]),), )
+                f1 = a.instances[rightName].faces
+                a.PartitionCellByExtendFace(extendFace=f1[2], cells=pickedCells)
+                # v1 = a.instances[rightName].vertices
+                # e1 = a.instances[rightName].edges
+                # a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4], cells=pickedCells)
+            surfPoints.append([self.colsPos[colName][0] + colSize[0], self.colsPos[colName][1] + colSize[2] - 5,
+                               self.colsPos[colName][2] + colSize[1] / 2])
 
-                        c1 = a.instances[colName].cells
-                        pickedCells = c1.findAt(
-                            ((colTopCenterAxis[0] + 5, colTopCenterAxis[1] - 5, colTopCenterAxis[2]),), )
-                        f1 = a.instances[rightName].faces
-                        a.PartitionCellByExtendFace(extendFace=f1[2], cells=pickedCells)
-                        # v1 = a.instances[rightName].vertices
-                        # e1 = a.instances[rightName].edges
-                        # a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4], cells=pickedCells)
-                        surfPoints.append([self.colsPos[colName][0]+colSize[0], self.colsPos[colName][1] + colSize[2] - 5,
-                                           self.colsPos[colName][2] + colSize[1] / 2])
-                        if self.zBeamsPos[downName][0] > self.colsPos[colName][0] and self.zBeamsPos[downName][0] + \
-                                downSize[0] < self.colsPos[colName][0] + colSize[0]:
-                            c1 = a.instances[colName].cells
-                            pickedCells = c1.findAt(
-                                ((colTopCenterAxis[0], colTopCenterAxis[1] - 5, colTopCenterAxis[2]+5),), )
-                            f1 = a.instances[downName].faces
-                            a.PartitionCellByExtendFace(extendFace=f1[2], cells=pickedCells)
-                            # v1 = a.instances[downName].vertices
-                            # e1 = a.instances[downName].edges
-                            # a.PartitionCellByPlanePointNormal(point=v1[5], normal=e1[6], cells=pickedCells)
-
-                            c1 = a.instances[colName].cells
-                            pickedCells = c1.findAt(
-                                ((colTopCenterAxis[0], colTopCenterAxis[1] - 5, colTopCenterAxis[2]+5),), )
-                            f1 = a.instances[downName].faces
-                            a.PartitionCellByExtendFace(extendFace=f1[0], cells=pickedCells)
-                            # v1 = a.instances[downName].vertices
-                            # e1 = a.instances[downName].edges
-                            # a.PartitionCellByPlanePointNormal(point=v1[2], normal=e1[6], cells=pickedCells)
-                            surfPoints.append([self.colsPos[colName][0]+colSize[0]/2, self.colsPos[colName][1] + colSize[2] - 5,
-                                               self.colsPos[colName][2] + colSize[1]])
-                            if self.zBeamsPos[upName][0] > self.colsPos[colName][0] and self.zBeamsPos[upName][0] + \
-                                    upSize[0] < self.colsPos[colName][0] + colSize[0]:
-                                c1 = a.instances[colName].cells
-                                pickedCells = c1.findAt(
-                                    ((colTopCenterAxis[0], colTopCenterAxis[1] - 5, colTopCenterAxis[2]-5),), )
-                                f1 = a.instances[downName].faces
-                                a.PartitionCellByExtendFace(extendFace=f1[2], cells=pickedCells)
-                                # v1 = a.instances[upName].vertices
-                                # e1 = a.instances[upName].edges
-                                # a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
-
-                                c1 = a.instances[colName].cells
-                                pickedCells = c1.findAt(
-                                    ((colTopCenterAxis[0], colTopCenterAxis[1] - 5, colTopCenterAxis[2]-5),), )
-                                f1 = a.instances[downName].faces
-                                a.PartitionCellByExtendFace(extendFace=f1[0], cells=pickedCells)
-                                # v1 = a.instances[upName].vertices
-                                # e1 = a.instances[upName].edges
-                                # a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4], cells=pickedCells)
-                                surfPoints.append([self.colsPos[colName][0]+colSize[0]/2, self.colsPos[colName][1] + colSize[2] - 5,
-                                                   self.colsPos[colName][2]])
-
-            cmd = 'result = a.instances[colName].faces.findAt('
-            for i in range(len(surfPoints)):
-                cmd += "((surfPoints[%d]),)," % i
-            # result = a.instances[colName].faces.findAt(((surfPoints[0]),),((surfPoints[1]),),((surfPoints[2]),),((surfPoints[3]),),)  # 1
-            cmd += ')'
-            exec (cmd)
-            # if leftSize[1]== rightSize[1]:#左右梁高相等
-            #     if upSize[1] == downSize[1]:#上下梁高相等
-            #         if leftSize[1] == upSize[1]:#上左梁高相等
-            #             c1 = a.instances[colName].cells
-            #             pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #             v1 = a.instances[rightName].vertices
-            #             e1 = a.instances[rightName].edges
-            #             a.PartitionCellByPlanePointNormal(point=v1[6], normal=e1[7],cells=pickedCells)
-            #             if self.xBeamsPos[leftName][2] == self.xBeamsPos[rightName][2]:#左右梁上边重合
-            #                 if self.xBeamsPos[leftName][2] + leftSize[0] == self.xBeamsPos[rightName][2] + rightSize[0]:#左右梁下边重合
-            #                     if self.xBeamsPos[leftName][2] > self.colsPos[colName][2]:#左右两梁上边线不与柱上边重合
-            #                         if self.xBeamsPos[leftName][2]  + leftSize[0] < self.colsPos[colName][2] + colSize[1]:#左右两梁下边线不与柱下边重合
-            #                             # 柱子右侧梁剖切面，下部线
-            #                             pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                             v1 = a.instances[rightName].vertices
-            #                             e1 = a.instances[rightName].edges
-            #                             a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
-            #                             # 柱子右侧梁剖切面，上部线
-            #                             pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                             v1 = a.instances[rightName].vertices
-            #                             e1 = a.instances[rightName].edges
-            #                             a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4], cells=pickedCells)
-            #                             if self.zBeamsPos[downName][0] > self.colsPos[colName][0]:#下梁左边线不与柱左边重合
-            #                                 if self.zBeamsPos[downName][0] + downSize[0] < self.colsPos[colName][0] + colSize[0]:#下梁右边线不与柱右边重合
-            #                                     # 柱子下侧梁剖切面，右部线
-            #                                     pickedCells = c1.getSequenceFromMask(mask=('[#8 ]',), )
-            #                                     v1 = a.instances[downName].vertices
-            #                                     e1 = a.instances[downName].edges
-            #                                     a.PartitionCellByPlanePointNormal(point=v1[5], normal=e1[6], cells=pickedCells)
-            #                                     # 柱子下侧梁剖切面，左部线
-            #                                     pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                     v1 = a.instances[downName].vertices
-            #                                     e1 = a.instances[downName].edges
-            #                                     a.PartitionCellByPlanePointNormal(point=v1[2], normal=e1[6], cells=pickedCells)
-            #                                     if self.zBeamsPos[upName][0] > self.colsPos[colName][0]:  # 上梁左边线不与柱左边重合
-            #                                         if self.zBeamsPos[upName][0] + upSize[0] < self.colsPos[colName][0] + colSize[0]:  # 上梁右边线不与柱右边重合
-            #                                             # 柱子上侧梁剖切面，右部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#4 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
-            #                                             # 柱子上侧梁剖切面，左部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4], cells=pickedCells)
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(mask=('[#88400000 #10 ]',), ) #2
-            #                                         else:# 上梁右边线与柱右边重合
-            #                                             # 柱子上侧梁剖切面，左部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#4 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4],
-            #                                                                               cells=pickedCells)
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(
-            #                                                 mask=('[#84420000 ]',), )  # 3
-            #                                     else:# 上梁左边线与柱左边重合
-            #                                         if self.zBeamsPos[upName][0] + upSize[0] < self.colsPos[colName][0] + colSize[0]:  # 上梁右边线不与柱右边重合
-            #                                             # 柱子上侧梁剖切面，右部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#4 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(mask=('[#80420002 ]',), ) #4
-            #                                         else:# 上梁右边线与柱右边重合
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(mask=('[#221010 ]',), )  # 5
-            #
-            #                                 else:#下梁右边线与柱右边重合
-            #                                     # 柱子下侧梁剖切面，左部线
-            #                                     pickedCells = c1.getSequenceFromMask(mask=('[#8 ]',), )
-            #                                     v1 = a.instances[downName].vertices
-            #                                     e1 = a.instances[downName].edges
-            #                                     a.PartitionCellByPlanePointNormal(point=v1[2], normal=e1[6],
-            #                                                                       cells=pickedCells)
-            #                                     if self.zBeamsPos[upName][0] > self.colsPos[colName][0]:  # 上梁左边线不与柱左边重合
-            #                                         if self.zBeamsPos[upName][0] + upSize[0] < self.colsPos[colName][0] + colSize[0]:  # 上梁右边线不与柱右边重合
-            #                                             # 柱子上侧梁剖切面，右部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
-            #                                             # 柱子上侧梁剖切面，左部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4], cells=pickedCells)
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(mask=('[#4420800 ]',), ) #6
-            #                                         else:# 上梁右边线与柱右边重合
-            #                                             # 柱子上侧梁剖切面，左部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4],
-            #                                                                               cells=pickedCells)
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(
-            #                                                 mask=('[#4221000 ]',), )  # 7
-            #                                     else:# 上梁左边线与柱左边重合
-            #                                         if self.zBeamsPos[upName][0] + upSize[0] < self.colsPos[colName][0] + colSize[0]:  # 上梁右边线不与柱右边重合
-            #                                             # 柱子上侧梁剖切面，右部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(mask=('[#221040 ]',), ) #8
-            #                                         else:# 上梁右边线与柱右边重合
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(mask=('[#11082 ]',), )  # 9
-            #
-            #                             else:#下梁左边线与柱左边重合
-            #                                 if self.zBeamsPos[downName][0] + downSize[0] < self.colsPos[colName][0] + colSize[0]:#下梁右边线不与柱右边重合
-            #                                     # 柱子下侧梁剖切面，右部线
-            #                                     pickedCells = c1.getSequenceFromMask(mask=('[#8 ]',), )
-            #                                     v1 = a.instances[downName].vertices
-            #                                     e1 = a.instances[downName].edges
-            #                                     a.PartitionCellByPlanePointNormal(point=v1[5], normal=e1[6], cells=pickedCells)
-            #                                     if self.zBeamsPos[upName][0] > self.colsPos[colName][0]:  # 上梁左边线不与柱左边重合
-            #                                         if self.zBeamsPos[upName][0] + upSize[0] < self.colsPos[colName][0] + colSize[0]:  # 上梁右边线不与柱右边重合
-            #                                             # 柱子上侧梁剖切面，右部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
-            #                                             # 柱子上侧梁剖切面，左部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4], cells=pickedCells)
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(mask=('[#4420800 ]',), ) #10
-            #                                         else:# 上梁右边线与柱右边重合
-            #                                             # 柱子上侧梁剖切面，左部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4],
-            #                                                                               cells=pickedCells)
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(
-            #                                                 mask=('[#221040 ]',), )  # 11
-            #                                     else:# 上梁左边线与柱左边重合
-            #                                         if self.zBeamsPos[upName][0] + upSize[0] < self.colsPos[colName][0] + colSize[0]:  # 上梁右边线不与柱右边重合
-            #                                             # 柱子上侧梁剖切面，右部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(mask=('[#21042 ]',), ) #12
-            #                                         else:# 上梁右边线与柱右边重合
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(mask=('[#11082 ]',), )  # 13
-            #
-            #                                 else:#下梁右边线与柱右边重合
-            #                                     # 柱子下侧梁剖切面，左部线
-            #                                     pickedCells = c1.getSequenceFromMask(mask=('[#8 ]',), )
-            #                                     v1 = a.instances[downName].vertices
-            #                                     e1 = a.instances[downName].edges
-            #                                     a.PartitionCellByPlanePointNormal(point=v1[2], normal=e1[6],
-            #                                                                       cells=pickedCells)
-            #                                     if self.zBeamsPos[upName][0] > self.colsPos[colName][0]:  # 上梁左边线不与柱左边重合
-            #                                         if self.zBeamsPos[upName][0] + upSize[0] < self.colsPos[colName][0] + colSize[0]:  # 上梁右边线不与柱右边重合
-            #                                             # 柱子上侧梁剖切面，右部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
-            #                                             # 柱子上侧梁剖切面，左部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4], cells=pickedCells)
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(mask=('[#4420800 ]',), ) #6
-            #                                         else:# 上梁右边线与柱右边重合
-            #                                             # 柱子上侧梁剖切面，左部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4],
-            #                                                                               cells=pickedCells)
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(
-            #                                                 mask=('[#4221000 ]',), )  # 7
-            #                                     else:# 上梁左边线与柱左边重合
-            #                                         if self.zBeamsPos[upName][0] + upSize[0] < self.colsPos[colName][0] + colSize[0]:  # 上梁右边线不与柱右边重合
-            #                                             # 柱子上侧梁剖切面，右部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(mask=('[#221040 ]',), ) #8
-            #                                         else:# 上梁右边线与柱右边重合
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(mask=('[#11082 ]',), )  # 9
-            #
-            #
-            #
-            #                         else:#左右两梁下边线与柱下边重合
-            #                             # 柱子右侧梁剖切面，上部线
-            #                             pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                             v1 = a.instances[rightName].vertices
-            #                             e1 = a.instances[rightName].edges
-            #                             a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4], cells=pickedCells)
-            #                             if self.zBeamsPos[downName][0] > self.colsPos[colName][0]:#下梁左边线不与柱左边重合
-            #                                 if self.zBeamsPos[downName][0] + downSize[0] < self.colsPos[colName][0] + colSize[0]:#下梁右边线不与柱右边重合
-            #                                     # 柱子下侧梁剖切面，右部线
-            #                                     pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                                     v1 = a.instances[downName].vertices
-            #                                     e1 = a.instances[downName].edges
-            #                                     a.PartitionCellByPlanePointNormal(point=v1[5], normal=e1[6], cells=pickedCells)
-            #                                     # 柱子下侧梁剖切面，左部线
-            #                                     pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                     v1 = a.instances[downName].vertices
-            #                                     e1 = a.instances[downName].edges
-            #                                     a.PartitionCellByPlanePointNormal(point=v1[2], normal=e1[6], cells=pickedCells)
-            #                                     if self.zBeamsPos[upName][0] > self.colsPos[colName][0]:  # 上梁左边线不与柱左边重合
-            #                                         if self.zBeamsPos[upName][0] + upSize[0] < self.colsPos[colName][0] + colSize[0]:  # 上梁右边线不与柱右边重合
-            #                                             # 柱子上侧梁剖切面，右部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#4 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
-            #                                             # 柱子上侧梁剖切面，左部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4], cells=pickedCells)
-            #                             # # 柱子下侧梁剖切面，右部线
-            #                             # pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                             # v1 = a.instances[downName].vertices
-            #                             # e1 = a.instances[downName].edges
-            #                             # a.PartitionCellByPlanePointNormal(point=v1[5], normal=e1[6], cells=pickedCells)
-            #                             # # 柱子下侧梁剖切面，左部线
-            #                             # pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                             # v1 = a.instances[downName].vertices
-            #                             # e1 = a.instances[downName].edges
-            #                             # a.PartitionCellByPlanePointNormal(point=v1[2], normal=e1[6], cells=pickedCells)
-            #                             # # 柱子上侧梁剖切面，右部线
-            #                             # pickedCells = c1.getSequenceFromMask(mask=('[#4 ]',), )
-            #                             # v1 = a.instances[upName].vertices
-            #                             # e1 = a.instances[upName].edges
-            #                             # a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
-            #                             # # 柱子上侧梁剖切面，左部线
-            #                             # pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                             # v1 = a.instances[upName].vertices
-            #                             # e1 = a.instances[upName].edges
-            #                             # a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4], cells=pickedCells)
-            #
-            #                             s1 = a.instances[colName].faces
-            #                             result = s1.getSequenceFromMask(mask=('[#1100820 ]',), )
-            #                     else:#左右两梁上边线与柱上边重合
-            #                         if self.xBeamsPos[leftName][2] + leftSize[0] < self.colsPos[colName][2] + colSize[1]:  # 左右两梁下边线不与柱下边重合
-            #                             # 柱子右侧梁剖切面，下部线
-            #                             pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                             v1 = a.instances[rightName].vertices
-            #                             e1 = a.instances[rightName].edges
-            #                             a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
-            #                             if self.zBeamsPos[downName][0] > self.colsPos[colName][0]:#下梁左边线不与柱左边重合
-            #                                 if self.zBeamsPos[downName][0] + downSize[0] < self.colsPos[colName][0] + colSize[0]:#下梁右边线不与柱右边重合
-            #                                     # 柱子下侧梁剖切面，右部线
-            #                                     pickedCells = c1.getSequenceFromMask(mask=('[#4 ]',), )
-            #                                     v1 = a.instances[downName].vertices
-            #                                     e1 = a.instances[downName].edges
-            #                                     a.PartitionCellByPlanePointNormal(point=v1[5], normal=e1[6], cells=pickedCells)
-            #                                     # 柱子下侧梁剖切面，左部线
-            #                                     pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                     v1 = a.instances[downName].vertices
-            #                                     e1 = a.instances[downName].edges
-            #                                     a.PartitionCellByPlanePointNormal(point=v1[2], normal=e1[6], cells=pickedCells)
-            #                                     if self.zBeamsPos[upName][0] > self.colsPos[colName][0]:  # 上梁左边线不与柱左边重合
-            #                                         if self.zBeamsPos[upName][0] + upSize[0] < self.colsPos[colName][0] + colSize[0]:  # 上梁右边线不与柱右边重合
-            #                                             # 柱子上侧梁剖切面，右部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#4 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4], cells=pickedCells)
-            #                                             # 柱子上侧梁剖切面，左部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                             v1 = a.instances[upName].vertices
-            #                                             e1 = a.instances[upName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4], cells=pickedCells)
-            #
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(mask=('[#9101000 ]',), )
-            #                         else:# 左右两梁下边线与柱下边重合
-            #                             if self.zBeamsPos[upName][0] == self.zBeamsPos[downName][0]:#上下梁左边线重合
-            #                                 if self.zBeamsPos[upName][0] + upSize[0]== self.zBeamsPos[downName][0] + downSize[0]:#上下梁右边线重合
-            #                                     if self.zBeamsPos[upName][0] > self.colsPos[colName][0]:#上下梁左边线不与柱左边重合
-            #                                         if self.zBeamsPos[upName][0] + upSize[0] < self.colsPos[colName][0]+colSize[0]:#上下梁右边线不与柱右边重合
-            #                                             # 柱子上下侧梁剖切面，右部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                                             v1 = a.instances[downName].vertices
-            #                                             e1 = a.instances[downName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[5], normal=e1[6],
-            #                                                                               cells=pickedCells)
-            #                                             # 柱子上下侧梁剖切面，左部线
-            #                                             pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                             v1 = a.instances[downName].vertices
-            #                                             e1 = a.instances[downName].edges
-            #                                             a.PartitionCellByPlanePointNormal(point=v1[2], normal=e1[6],
-            #                                                                               cells=pickedCells)
-            #                                             s1 = a.instances[colName].faces
-            #                                             result = s1.getSequenceFromMask(mask=('[#34004 ]',), )#1
-            #                 else:#左右梁下边位置不相等
-            #                     if self.xBeamsPos[leftName][2] + leftSize[0] > self.xBeamsPos[rightName][2] + rightSize[0]:#左梁下边线超过右梁下边线
-            #                         if self.xBeamsPos[leftName][2] > self.colsPos[colName][2]:  # 左右两梁上边线不与柱上边重合
-            #                             if self.xBeamsPos[leftName][2] + leftSize[0] < self.colsPos[colName][2] + colSize[1]:  # 左梁下边线不与柱下边重合
-            #                                 # 柱子右侧梁剖切面，下部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                                 v1 = a.instances[rightName].vertices
-            #                                 e1 = a.instances[rightName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4],
-            #                                                                   cells=pickedCells)
-            #                                 # 柱子右侧梁剖切面，上部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                 v1 = a.instances[rightName].vertices
-            #                                 e1 = a.instances[rightName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4],
-            #                                                                   cells=pickedCells)
-            #                                 # 柱子左侧梁剖切面，下部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#8 ]',), )
-            #                                 v1 = a.instances[leftName].vertices
-            #                                 e1 = a.instances[leftName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[5], normal=e1[6],
-            #                                                                   cells=pickedCells)
-            #
-            #                                 # 柱子下侧梁剖切面，右部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#8 ]',), )
-            #                                 v1 = a.instances[downName].vertices
-            #                                 e1 = a.instances[downName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[5], normal=e1[6],
-            #                                                                   cells=pickedCells)
-            #                                 # 柱子下侧梁剖切面，左部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                 v1 = a.instances[downName].vertices
-            #                                 e1 = a.instances[downName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[2], normal=e1[6],
-            #                                                                   cells=pickedCells)
-            #                                 # 柱子上侧梁剖切面，右部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#4 ]',), )
-            #                                 v1 = a.instances[upName].vertices
-            #                                 e1 = a.instances[upName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4],
-            #                                                                   cells=pickedCells)
-            #                                 # 柱子上侧梁剖切面，左部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                 v1 = a.instances[upName].vertices
-            #                                 e1 = a.instances[upName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4],
-            #                                                                   cells=pickedCells)
-            #
-            #                                 s1 = a.instances[colName].faces
-            #                                 result = s1.getSequenceFromMask(mask=('[#88400000 #10 ]',), )
-            #                             else:  # 左右两梁下边线与柱下边重合
-            #                                 # 柱子右侧梁剖切面，上部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                 v1 = a.instances[rightName].vertices
-            #                                 e1 = a.instances[rightName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4],
-            #                                                                   cells=pickedCells)
-            #                                 # 柱子下侧梁剖切面，右部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                                 v1 = a.instances[downName].vertices
-            #                                 e1 = a.instances[downName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[5], normal=e1[6],
-            #                                                                   cells=pickedCells)
-            #                                 # 柱子下侧梁剖切面，左部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                 v1 = a.instances[downName].vertices
-            #                                 e1 = a.instances[downName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[2], normal=e1[6],
-            #                                                                   cells=pickedCells)
-            #                                 # 柱子上侧梁剖切面，右部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#4 ]',), )
-            #                                 v1 = a.instances[upName].vertices
-            #                                 e1 = a.instances[upName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4],
-            #                                                                   cells=pickedCells)
-            #                                 # 柱子上侧梁剖切面，左部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                 v1 = a.instances[upName].vertices
-            #                                 e1 = a.instances[upName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4],
-            #                                                                   cells=pickedCells)
-            #
-            #                                 s1 = a.instances[colName].faces
-            #                                 result = s1.getSequenceFromMask(mask=('[#1100820 ]',), )
-            #                         else:  # 左右两梁上边线与柱上边重合
-            #                             if self.xBeamsPos[leftName][2] + leftSize[0] < self.colsPos[colName][2] + \
-            #                                     colSize[1]:  # 左右两梁下边线不与柱下边重合
-            #                                 # 柱子右侧梁剖切面，下部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#2 ]',), )
-            #                                 v1 = a.instances[rightName].vertices
-            #                                 e1 = a.instances[rightName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4],
-            #                                                                   cells=pickedCells)
-            #                                 # 柱子下侧梁剖切面，右部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#4 ]',), )
-            #                                 v1 = a.instances[downName].vertices
-            #                                 e1 = a.instances[downName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[5], normal=e1[6],
-            #                                                                   cells=pickedCells)
-            #                                 # 柱子下侧梁剖切面，左部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                 v1 = a.instances[downName].vertices
-            #                                 e1 = a.instances[downName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[2], normal=e1[6],
-            #                                                                   cells=pickedCells)
-            #                                 # 柱子上侧梁剖切面，右部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#4 ]',), )
-            #                                 v1 = a.instances[upName].vertices
-            #                                 e1 = a.instances[upName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[4], normal=e1[4],
-            #                                                                   cells=pickedCells)
-            #                                 # 柱子上侧梁剖切面，左部线
-            #                                 pickedCells = c1.getSequenceFromMask(mask=('[#1 ]',), )
-            #                                 v1 = a.instances[upName].vertices
-            #                                 e1 = a.instances[upName].edges
-            #                                 a.PartitionCellByPlanePointNormal(point=v1[1], normal=e1[4],
-            #                                                                   cells=pickedCells)
-            #
-            #                                 s1 = a.instances[colName].faces
-            #                                 result = s1.getSequenceFromMask(mask=('[#9101000 ]',), )
-            #                             else:  # 左右两梁下边线与柱下边重合
-            #
-            #                                 s1 = a.instances[colName].faces
-            #                                 result = s1.getSequenceFromMask(mask=('[#6a ]',), )
-            #
-
+        cmd = 'result = a.instances[colName].faces.findAt('
+        for i in range(len(surfPoints)):
+            cmd += "((surfPoints[%d]),)," % i
+        # result = a.instances[colName].faces.findAt(((surfPoints[0]),),((surfPoints[1]),),((surfPoints[2]),),((surfPoints[3]),),)  # 1
+        cmd += ')'
+        exec (cmd)
 
         return result
+    def getBeamSurfToCol(self,BeamName,ends = [1,1]):
+        result = None
+        surfPoints = []
+        a = mdb.models[self.modelName].rootAssembly
+        if BeamName[:5] == 'xbeam':
+            if ends[0] == 1:
+                surfPoints.append([self.xBeamsPos[BeamName][0], self.xBeamsPos[BeamName][1]-5,self.xBeamsPos[BeamName][2]+self.partSize[self.xBeamsPart[BeamName]][0]/2])
+            if ends[1] == 1:
+                surfPoints.append([self.xBeamsPos[BeamName][0]+self.partSize[self.xBeamsPart[BeamName]][2], self.xBeamsPos[BeamName][1] - 5,
+                                   self.xBeamsPos[BeamName][2] + self.partSize[self.xBeamsPart[BeamName]][0] / 2])
+        if BeamName[:5] == 'zbeam':
+            if ends[0] == 1:
+                surfPoints.append([self.zBeamsPos[BeamName][0] + self.partSize[self.zBeamsPart[BeamName]][0] / 2, self.zBeamsPos[BeamName][1]-5,self.zBeamsPos[BeamName][2]])
+            if ends[1] == 1:
+                surfPoints.append([self.zBeamsPos[BeamName][0] + self.partSize[self.zBeamsPart[BeamName]][0] / 2, self.zBeamsPos[BeamName][1]-5,
+                                   self.zBeamsPos[BeamName][2] + self.partSize[self.zBeamsPart[BeamName]][2]])
+
+        cmd = 'result = a.instances[BeamName].faces.findAt('
+        for i in range(len(surfPoints)):
+            cmd += "((surfPoints[%d]),)," % i
+        # result = a.instances[colName].faces.findAt(((surfPoints[0]),),((surfPoints[1]),),((surfPoints[2]),),((surfPoints[3]),),)  # 1
+        cmd += ')'
+        exec (cmd)
+
+        return result
+
+    def getColTopSurf(self,colName):
+        result = None
+        surfPoints = []
+        a = mdb.models[self.modelName].rootAssembly
+        if self.colsColState[colName][0] == 1:
+            surfPoints.append([self.colsPos[colName][0]+self.partSize[self.colsPart[colName]][0] / 2,
+                               self.colsPos[colName][1]+self.partSize[self.colsPart[colName]][2],
+                               self.colsPos[colName][2] + self.partSize[self.colsPart[colName]][1] / 2])
+
+            result = a.instances[colName].faces.findAt(((surfPoints[0]),),)
+
+        return result
+
+    def getColBottomSurf(self, colName):
+        result = None
+        surfPoints = []
+        a = mdb.models[self.modelName].rootAssembly
+        if self.colsColState[colName][1] == 1:
+            surfPoints.append([self.colsPos[colName][0] + self.partSize[self.colsPart[colName]][0] / 2,
+                               self.colsPos[colName][1],
+                               self.colsPos[colName][2] + self.partSize[self.colsPart[colName]][1] / 2])
+
+            result = a.instances[colName].faces.findAt(((surfPoints[0]),), )
+
+        return result
+
 
 
 
